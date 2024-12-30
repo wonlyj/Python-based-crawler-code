@@ -13,7 +13,8 @@ def get_url_data(url, description='没有说明'):
         print(f"网络访问失败-请检查网站信息: {url}")
         return None
 
-def parse_page(data, workbook, worksheet, year, month):
+
+def parse_page(data, worksheet, year, month):
     html = data.decode('utf-8')
     page_soup = BeautifulSoup(html, 'html.parser')
     weather_datas = page_soup.find('ul', attrs={'class': 'tian_two'}).find_all('li')
@@ -21,11 +22,16 @@ def parse_page(data, workbook, worksheet, year, month):
     for weather_data in weather_datas:
         datas = weather_data.find_all('div', attrs={'class': 'tian_twoa'})
         for i in datas:
-            weather_list.append(i.string)
-    # Add a header row for each month
-    header_row = [f"{year}年{month}月"]
+            weather_list.append(i.string.strip())  # 使用strip()去除可能的空白字符
+
+    # 构建年月字符串
+    year_month = f"{year}{month:02d}"
+
+    header_row = ['年月', '月平均高温', '月平均低温', '月最高温', '月最低温', '月空气质量指数', '空气最好指数', '空气最差指数']
     worksheet.append(header_row)
-    worksheet.append(weather_list)
+
+    data_row = [year_month] + weather_list
+    worksheet.append(data_row)
 
 def main():
     file_path = '北京18-21年每月空气质量和最高最低温.xlsx'
@@ -33,7 +39,6 @@ def main():
         wk = Workbook()
         wb = wk.active
         wb.title = "北京每月空气质量指数和最高最低温"
-        # No need to create a title list here, as we will add headers for each month
         wk.save(filename=file_path)
 
     wk = load_workbook(filename=file_path)
@@ -48,7 +53,7 @@ def main():
             print(f"爬取第{year}年第{month}月数据")
             page_data = get_url_data(url=url, description=f'爬取第{year}年第{month}月数据')
             if page_data:
-                parse_page(page_data, wk, wb, year, month)
+                parse_page(page_data, wb, year, month)
 
     wk.save(filename=file_path)
 
